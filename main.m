@@ -1,7 +1,12 @@
 #import <UIKit/UIKit.h>
 
+
+
+
 static NSString *const CLRecordsKey = @"ChickenLedgerRecords";
 static UIColor *CLOrange(void) { return [UIColor colorWithRed:0.956 green:0.482 blue:0.227 alpha:1]; }
+static UIColor *CLSoftOrange(void) { return [UIColor colorWithRed:1 green:.91 blue:.82 alpha:1]; }
+static UIColor *CLMuted(void) { return [UIColor colorWithRed:.48 green:.42 blue:.38 alpha:1]; }
 static UIColor *CLInk(void) { return [UIColor colorWithRed:0.220 green:0.176 blue:0.153 alpha:1]; }
 static UIColor *CLCream(void) { return [UIColor colorWithRed:1 green:0.973 blue:0.941 alpha:1]; }
 static NSArray<NSString *> *CLItemNames(void) { return @[@"雞腿", @"雞胸", @"雞翅", @"雞屁股", @"雞脖"]; }
@@ -14,12 +19,18 @@ static NSString *CLText(id value) { return [value isKindOfClass:NSString.class] 
 static NSString *CLDateString(NSDate *date) { NSDateFormatter *f=[NSDateFormatter new]; f.dateFormat=@"yyyy-MM-dd"; return [f stringFromDate:date]; }
 static NSString *CLDateDisplay(NSString *date) { NSDateFormatter *f=[NSDateFormatter new]; f.dateFormat=@"yyyy-MM-dd"; NSDate *d=[f dateFromString:date]; f.dateFormat=@"yyyy / MM / dd"; return d?[f stringFromDate:d]:date; }
 
+
+
+
 @interface CLItemFields : NSObject
 @property(nonatomic, copy) NSString *name;
 @property(nonatomic, strong) UITextField *price;
 @property(nonatomic, strong) UITextField *quantity;
 @end
 @implementation CLItemFields @end
+
+
+
 
 @interface CLHomeViewController : UIViewController
 @property(nonatomic, strong) UITextField *location;
@@ -28,27 +39,36 @@ static NSString *CLDateDisplay(NSString *date) { NSDateFormatter *f=[NSDateForma
 @property(nonatomic, strong) NSMutableArray<CLItemFields *> *fields;
 @end
 
+
+
+
 @interface CLHistoryViewController : UITableViewController
 @property(nonatomic, strong) NSArray *records;
 @property(nonatomic, strong) UILabel *summaryLabel;
 @end
 
+
+
+
 @implementation CLHomeViewController
-- (void)viewDidLoad { [super viewDidLoad]; self.title=@"今日記帳"; self.view.backgroundColor=CLCream(); self.fields=[NSMutableArray array]; [self buildUI]; [self loadRecordForDate:CLDateString([NSDate date])]; [self recalculate:nil]; }
+- (void)viewDidLoad { [super viewDidLoad]; self.title=@"今日記帳"; self.view.backgroundColor=CLCream(); self.fields=[NSMutableArray array]; [self buildUI]; [self loadRecordForDate:CLDateString([NSDate date])]; [self recalculate:nil]; UITapGestureRecognizer *tap=[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(endEditing)]; [self.view addGestureRecognizer:tap]; }
+- (void)endEditing { [self.view endEditing:YES]; }
 - (UILabel *)label:(NSString *)text size:(CGFloat)size color:(UIColor *)color weight:(UIFontWeight)weight { UILabel *l=[UILabel new]; l.text=text; l.font=[UIFont systemFontOfSize:size weight:weight]; l.textColor=color; return l; }
-- (UIView *)card { UIView *v=[UIView new]; v.backgroundColor=UIColor.whiteColor; v.layer.cornerRadius=18; v.layer.borderWidth=1; v.layer.borderColor=[UIColor colorWithRed:.953 green:.898 blue:.847 alpha:1].CGColor; return v; }
+- (UIView *)card { UIView *v=[UIView new]; v.backgroundColor=UIColor.whiteColor; v.layer.cornerRadius=18; v.layer.borderWidth=1; v.layer.borderColor=[UIColor colorWithRed:.953 green:.898 blue:.847 alpha:1].CGColor; v.layer.shadowColor=CLInk().CGColor; v.layer.shadowOpacity=.06; v.layer.shadowRadius=12; v.layer.shadowOffset=CGSizeMake(0,4); return v; }
 - (UITextField *)textField:(NSString *)placeholder keyboard:(UIKeyboardType)keyboard { UITextField *f=[UITextField new]; f.placeholder=placeholder; f.font=[UIFont systemFontOfSize:15]; f.textColor=CLInk(); f.backgroundColor=[UIColor colorWithRed:1 green:.973 blue:.941 alpha:1]; f.layer.cornerRadius=12; f.layer.borderWidth=1; f.layer.borderColor=[UIColor colorWithRed:.949 green:.773 blue:.659 alpha:1].CGColor; f.leftView=[[UIView alloc] initWithFrame:CGRectMake(0,0,10,1)]; f.leftViewMode=UITextFieldViewModeAlways; f.keyboardType=keyboard; [f addTarget:self action:@selector(recalculate:) forControlEvents:UIControlEventEditingChanged]; return f; }
 - (void)buildUI {
     UIScrollView *scroll=[UIScrollView new]; scroll.translatesAutoresizingMaskIntoConstraints=NO; [self.view addSubview:scroll]; [NSLayoutConstraint activateConstraints:@[[scroll.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],[scroll.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],[scroll.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],[scroll.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]]];
     UIStackView *stack=[UIStackView new]; stack.axis=UILayoutConstraintAxisVertical; stack.spacing=14; stack.translatesAutoresizingMaskIntoConstraints=NO; [scroll addSubview:stack]; [NSLayoutConstraint activateConstraints:@[[stack.leadingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.leadingAnchor constant:20],[stack.trailingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.trailingAnchor constant:-20],[stack.topAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.topAnchor constant:18],[stack.bottomAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.bottomAnchor constant:24],[stack.widthAnchor constraintEqualToAnchor:scroll.frameLayoutGuide.widthAnchor constant:-40]]];
-    [stack addArrangedSubview:[self label:@"記錄今天賣出的雞肉" size:25 color:CLInk() weight:UIFontWeightBold]];
+    UILabel *title=[self label:@"今天賣了多少？" size:28 color:CLInk() weight:UIFontWeightBold]; [stack addArrangedSubview:title];
+    [stack addArrangedSubview:[self label:@"輸入各部位售價與賣出的數量，金額會自動算好。" size:14 color:CLMuted() weight:UIFontWeightRegular]];
+    UIView *hero=[UIView new]; hero.backgroundColor=CLSoftOrange(); hero.layer.cornerRadius=18; [hero.heightAnchor constraintEqualToConstant:74].active=YES; UILabel *heroIcon=[self label:@"🐔" size:30 color:CLInk() weight:UIFontWeightRegular]; UILabel *heroText=[self label:@"今日銷售明細" size:17 color:CLInk() weight:UIFontWeightBold]; UILabel *heroHint=[self label:@"價格 × 數量 = 小計" size:12 color:CLMuted() weight:UIFontWeightRegular]; UIStackView *hs=[[UIStackView alloc] initWithArrangedSubviews:@[heroText,heroHint]]; hs.axis=UILayoutConstraintAxisVertical; hs.spacing=3; hs.translatesAutoresizingMaskIntoConstraints=NO; [hero addSubview:heroIcon]; [hero addSubview:hs]; heroIcon.translatesAutoresizingMaskIntoConstraints=NO; [NSLayoutConstraint activateConstraints:@[[heroIcon.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:18],[heroIcon.centerYAnchor constraintEqualToAnchor:hero.centerYAnchor],[hs.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:64],[hs.centerYAnchor constraintEqualToAnchor:hero.centerYAnchor]]]; [stack addArrangedSubview:hero];
     UIView *meta=[self card]; UIStackView *ms=[UIStackView new]; ms.axis=UILayoutConstraintAxisVertical; ms.spacing=8; ms.translatesAutoresizingMaskIntoConstraints=NO;
     UILabel *dateTitle=[self label:@"日期" size:13 color:[UIColor colorWithWhite:.5 alpha:1] weight:UIFontWeightRegular]; self.datePicker=[UIDatePicker new]; self.datePicker.datePickerMode=UIDatePickerModeDate; self.datePicker.preferredDatePickerStyle=UIDatePickerStyleCompact; self.datePicker.locale=[NSLocale localeWithLocaleIdentifier:@"zh_TW"]; [self.datePicker addTarget:self action:@selector(dateChanged:) forControlEvents:UIControlEventValueChanged]; UIStackView *dr=[[UIStackView alloc] initWithArrangedSubviews:@[dateTitle,self.datePicker]]; dr.axis=UILayoutConstraintAxisHorizontal; dr.distribution=UIStackViewDistributionEqualSpacing;
     UILabel *lt=[self label:@"地點" size:13 color:[UIColor colorWithWhite:.5 alpha:1] weight:UIFontWeightRegular]; self.location=[self textField:@"輸入地點，例如：第一市場" keyboard:UIKeyboardTypeDefault]; self.location.backgroundColor=UIColor.clearColor; self.location.layer.borderWidth=0; self.location.font=[UIFont systemFontOfSize:18 weight:UIFontWeightSemibold]; [ms addArrangedSubview:dr]; [ms addArrangedSubview:lt]; [ms addArrangedSubview:self.location]; [meta addSubview:ms]; [NSLayoutConstraint activateConstraints:@[[ms.leadingAnchor constraintEqualToAnchor:meta.leadingAnchor constant:16],[ms.trailingAnchor constraintEqualToAnchor:meta.trailingAnchor constant:-16],[ms.topAnchor constraintEqualToAnchor:meta.topAnchor constant:14],[ms.bottomAnchor constraintEqualToAnchor:meta.bottomAnchor constant:-14]]]; [stack addArrangedSubview:meta];
-    UIStackView *heads=[[UIStackView alloc] initWithArrangedSubviews:@[[self label:@"部位" size:13 color:[UIColor colorWithWhite:.5 alpha:1] weight:UIFontWeightRegular],[self label:@"價格" size:13 color:[UIColor colorWithWhite:.5 alpha:1] weight:UIFontWeightRegular],[self label:@"售出數量" size:13 color:[UIColor colorWithWhite:.5 alpha:1] weight:UIFontWeightRegular]]]; heads.axis=UILayoutConstraintAxisHorizontal; heads.spacing=10; [stack addArrangedSubview:heads];
+    UIStackView *heads=[[UIStackView alloc] initWithArrangedSubviews:@[[self label:@"部位" size:13 color:[UIColor colorWithWhite:.5 alpha:1] weight:UIFontWeightRegular],[self label:@"價格" size:13 color:[UIColor colorWithWhite:.5 alpha:1] weight:UIFontWeightRegular],[self label:@"售出數量" size:13 color:[UIColor colorWithWhite:.5 alpha:1] weight:UIFontWeightRegular]]]; heads.axis=UILayoutConstraintAxisHorizontal; heads.spacing=10; [stack addArrangedSubview:[self label:@"各部位銷售" size:19 color:CLInk() weight:UIFontWeightBold]]; [stack addArrangedSubview:heads];
     for (NSString *n in CLItemNames()) [self addItem:n toStack:stack];
     UIView *total=[UIView new]; total.backgroundColor=CLInk(); total.layer.cornerRadius=18; [total.heightAnchor constraintEqualToConstant:86].active=YES; UIStackView *ts=[[UIStackView alloc] initWithArrangedSubviews:@[[self label:@"今日賣出總額" size:14 color:[UIColor colorWithWhite:.82 alpha:1] weight:UIFontWeightRegular]]]; ts.axis=UILayoutConstraintAxisVertical; ts.spacing=5; self.totalLabel=[self label:@"$ 0" size:27 color:UIColor.whiteColor weight:UIFontWeightBold]; [ts addArrangedSubview:self.totalLabel]; ts.translatesAutoresizingMaskIntoConstraints=NO; [total addSubview:ts]; [NSLayoutConstraint activateConstraints:@[[ts.leadingAnchor constraintEqualToAnchor:total.leadingAnchor constant:22],[ts.centerYAnchor constraintEqualToAnchor:total.centerYAnchor]]]; [stack addArrangedSubview:total];
-    UIButton *save=[UIButton buttonWithType:UIButtonTypeSystem]; save.backgroundColor=CLOrange(); save.layer.cornerRadius=16; [save setTitle:@"保存今天的記錄" forState:UIControlStateNormal]; [save setTitleColor:UIColor.whiteColor forState:UIControlStateNormal]; save.titleLabel.font=[UIFont systemFontOfSize:17 weight:UIFontWeightBold]; [save.heightAnchor constraintEqualToConstant:52].active=YES; [save addTarget:self action:@selector(saveRecord) forControlEvents:UIControlEventTouchUpInside]; [stack addArrangedSubview:save];
+    UIButton *save=[UIButton buttonWithType:UIButtonTypeSystem]; save.backgroundColor=CLOrange(); save.layer.cornerRadius=16; save.layer.shadowColor=CLOrange().CGColor; save.layer.shadowOpacity=.22; save.layer.shadowRadius=10; save.layer.shadowOffset=CGSizeMake(0,5); [save setTitle:@"儲存今日帳款" forState:UIControlStateNormal]; [save setTitleColor:UIColor.whiteColor forState:UIControlStateNormal]; save.titleLabel.font=[UIFont systemFontOfSize:17 weight:UIFontWeightBold]; [save.heightAnchor constraintEqualToConstant:52].active=YES; [save addTarget:self action:@selector(saveRecord) forControlEvents:UIControlEventTouchUpInside]; [stack addArrangedSubview:save];
 }
 - (void)addItem:(NSString *)name toStack:(UIStackView *)stack { UIView *card=[self card]; [card.heightAnchor constraintEqualToConstant:70].active=YES; UILabel *nl=[self label:name size:17 color:CLInk() weight:UIFontWeightBold]; [nl.widthAnchor constraintEqualToConstant:72].active=YES; UITextField *p=[self textField:@"$ 價格" keyboard:UIKeyboardTypeDecimalPad]; UITextField *q=[self textField:@"數量" keyboard:UIKeyboardTypeDecimalPad]; [p.widthAnchor constraintEqualToConstant:95].active=YES; [q.widthAnchor constraintEqualToConstant:85].active=YES; CLItemFields *f=[CLItemFields new]; f.name=name; f.price=p; f.quantity=q; [self.fields addObject:f]; UIStackView *row=[[UIStackView alloc] initWithArrangedSubviews:@[nl,p,q]]; row.axis=UILayoutConstraintAxisHorizontal; row.alignment=UIStackViewAlignmentCenter; row.spacing=10; row.translatesAutoresizingMaskIntoConstraints=NO; [card addSubview:row]; [NSLayoutConstraint activateConstraints:@[[row.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:14],[row.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-14],[row.centerYAnchor constraintEqualToAnchor:card.centerYAnchor]]]; [stack addArrangedSubview:card]; }
 - (void)dateChanged:(UIDatePicker *)sender { [self loadRecordForDate:CLDateString(sender.date)]; [self recalculate:nil]; }
@@ -57,6 +77,9 @@ static NSString *CLDateDisplay(NSString *date) { NSDateFormatter *f=[NSDateForma
 - (void)saveRecord { NSDictionary *r=[self currentRecord]; NSMutableArray *all=[CLRecords() mutableCopy]; BOOL updated=NO; for (NSInteger i=0;i<all.count;i++) if ([all[i][@"date"] isEqual:r[@"date"]]) { all[i]=r; updated=YES; break; } if (!updated) [all insertObject:r atIndex:0]; CLSaveRecords(all); UIAlertController *a=[UIAlertController alertControllerWithTitle:@"已保存" message:[NSString stringWithFormat:@"%@\n%@",CLDateDisplay(r[@"date"]),CLMoney(CLRecordTotal(r))] preferredStyle:UIAlertControllerStyleAlert]; [a addAction:[UIAlertAction actionWithTitle:@"好" style:UIAlertActionStyleDefault handler:nil]]; [self presentViewController:a animated:YES completion:nil]; }
 - (void)loadRecordForDate:(NSString *)date { NSDictionary *found=nil; for (NSDictionary *r in CLRecords()) if ([r[@"date"] isEqual:date]) { found=r; break; } if (!found) { self.location.text=@""; for (CLItemFields *f in self.fields) { f.price.text=@""; f.quantity.text=@""; } return; } self.location.text=found[@"location"]; for (CLItemFields *f in self.fields) { NSDictionary *v=found[@"items"][f.name]; f.price.text=v[@"price"]; f.quantity.text=v[@"quantity"]; } }
 @end
+
+
+
 
 @implementation CLHistoryViewController
 - (void)viewDidLoad { [super viewDidLoad]; self.title=@"歷史紀錄"; self.tableView.backgroundColor=CLCream(); self.tableView.rowHeight=86; self.tableView.separatorStyle=UITableViewCellSeparatorStyleNone; self.navigationItem.rightBarButtonItem=[[UIBarButtonItem alloc] initWithTitle:@"匯出 CSV" style:UIBarButtonItemStylePlain target:self action:@selector(exportCSV)]; UIView *header=[[UIView alloc] initWithFrame:CGRectMake(0,0,self.view.bounds.size.width,72)]; self.summaryLabel=[[UILabel alloc] initWithFrame:CGRectMake(20,16,self.view.bounds.size.width-40,42)]; self.summaryLabel.numberOfLines=2; self.summaryLabel.font=[UIFont systemFontOfSize:16 weight:UIFontWeightSemibold]; self.summaryLabel.textColor=CLInk(); [header addSubview:self.summaryLabel]; self.tableView.tableHeaderView=header; [self reload]; }
@@ -69,6 +92,9 @@ static NSString *CLDateDisplay(NSString *date) { NSDateFormatter *f=[NSDateForma
 - (void)exportCSV { NSMutableString *csv=[NSMutableString stringWithString:@"日期,地點,部位,價格,數量,小計\n"]; for(NSDictionary *r in self.records){for(NSString *n in CLItemNames()){NSDictionary *v=r[@"items"][n];[csv appendFormat:@"%@,%@,%@,%@,%@,%.0f\n",r[@"date"],r[@"location"]?:@"",n,v[@"price"]?:@"",v[@"quantity"]?:@"",CLNumber(v[@"price"])*CLNumber(v[@"quantity"])];}} NSURL *url=[NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:@"雞肉記帳.csv"]]; [csv writeToURL:url atomically:YES encoding:NSUTF8StringEncoding error:nil]; UIActivityViewController *share=[[UIActivityViewController alloc] initWithActivityItems:@[url] applicationActivities:nil]; [self presentViewController:share animated:YES completion:nil]; }
 @end
 
+
+
+
 @interface CLAppDelegate : UIResponder <UIApplicationDelegate>
 @property(nonatomic, strong) UIWindow *window;
 @end
@@ -76,4 +102,10 @@ static NSString *CLDateDisplay(NSString *date) { NSDateFormatter *f=[NSDateForma
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions { CLHomeViewController *h=[CLHomeViewController new]; UINavigationController *hn=[[UINavigationController alloc] initWithRootViewController:h]; hn.tabBarItem=[[UITabBarItem alloc] initWithTitle:@"記帳" image:[UIImage systemImageNamed:@"square.and.pencil"] tag:0]; CLHistoryViewController *his=[CLHistoryViewController new]; UINavigationController *histn=[[UINavigationController alloc] initWithRootViewController:his]; histn.tabBarItem=[[UITabBarItem alloc] initWithTitle:@"歷史" image:[UIImage systemImageNamed:@"clock.arrow.circlepath"] tag:1]; UITabBarController *tabs=[UITabBarController new]; tabs.viewControllers=@[hn,histn]; tabs.tabBar.tintColor=CLOrange(); self.window=[[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds]; self.window.rootViewController=tabs; [self.window makeKeyAndVisible]; return YES; }
 @end
 
+
+
+
 int main(int argc,char *argv[]){@autoreleasepool{return UIApplicationMain(argc,argv,nil,NSStringFromClass([CLAppDelegate class]));}}
+
+
+
