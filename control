@@ -1,0 +1,8 @@
+Package: com.peko081.chickenledger
+Name: ChickenLedger
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Description: 雞肉攤販銷售記帳 App
+Maintainer: peko081
+Author: peko081
+Section: Utilities
