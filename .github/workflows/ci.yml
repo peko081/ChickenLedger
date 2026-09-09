@@ -11,11 +11,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install Theos
+      - name: Install Theos and ldid
         shell: bash
         run: |
           git clone --recursive https://github.com/theos/theos.git "$HOME/theos"
           echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+          brew install ldid
       - name: Build IPA
         run: make package FINALPACKAGE=1 PACKAGE_FORMAT=ipa
       - name: Upload IPA
